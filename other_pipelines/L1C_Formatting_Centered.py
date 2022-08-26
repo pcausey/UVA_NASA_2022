@@ -73,7 +73,7 @@ reverse_scale = 1000
 new_scale = 1/reverse_scale
 
 # This initializes the dictionary where we'll store all of our information before we cast it to an HDF file. 
-# A dictionary is a natural analog for an HDF file since it also utilizes hierarchical organization
+# A dictionary is a natural analog for an HDF confile since it also utilizes hierarchical organization
 final_dict = {}
 final_dict['geolocation_data'] = {}
 
