@@ -18,7 +18,7 @@ conda activate nasa_capstone_2022
 conda install pip
 ``` 
 **Step 5**: navigate to requirements.txt (should be in your base folder)
-
+    
 **Step 6**: install requirements.txt
 ```
 pip install -r requirements.txt

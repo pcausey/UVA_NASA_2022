@@ -1,3 +1,7 @@
 .idea/*
 .env
 /tmp_dir/*
+__pycache__/
+__py..\
+.ipynb_checkpoints
+
