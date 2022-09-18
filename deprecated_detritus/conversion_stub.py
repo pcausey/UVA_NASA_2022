@@ -1,4 +1,4 @@
-from deprecated_detritus.caltrack_dict import list_caltrack, LAT_LONG_ALT
+from L1C_Conversion_Pipeline.caltrack_dict import list_caltrack, LAT_LONG_ALT
 import h5py
 from pyhdf.SD import SD, SDC
 import os

@@ -1,87 +1,8 @@
-import numpy as np
 import copy
-from typing import NamedTuple
+import numpy as np
+from L1C_Conversion_Pipeline.caltrack_dict import *
 from L1C_Conversion_Pipeline.hdf_file_class import HDFFile
-from variables import *
-
-
-class CalTrakColumn(NamedTuple):
-    """ Class for holding the conversion dictionary column details"""
-    outputName: str
-    inputName: str
-    folder: str
-    wavelength: str = None
-
-
-cal_list = [
-    CalTrakColumn(outputName='latitude', inputName='Latitude',
-              wavelength=None, folder='geolocation_data'),
-    CalTrakColumn(outputName='longitude', inputName='Longitude',
-              wavelength=None, folder='geolocation_data'),
-    CalTrakColumn(outputName='time', inputName='Time',
-              wavelength=None, folder='bin_attributes')
-]
-
-cal_data_directional = [
-    CalTrakColumn(outputName='solar_zenith', inputName='Solar_Zenith_Angle',
-              wavelength=None, folder='geolocation_data'),
-    CalTrakColumn(outputName='sensor_zenith', inputName='View_Zenith_Angle_670P2',
-              wavelength=None, folder='geolocation_data'),
-    CalTrakColumn(outputName='relative_azimuth', inputName='Relative_Azimuth_Angle_670P2',
-              wavelength=None, folder='geolocation_data')
-]
-
-cal_I_non_polarized = [
-    CalTrakColumn(outputName='I', inputName='Normalized_Radiance_443NP',
-              wavelength='443', folder='observation_data'),
-    CalTrakColumn(outputName='I', inputName='Normalized_Radiance_1020NP',
-              wavelength='1020', folder='observation_data'),
-    CalTrakColumn(outputName='I', inputName='Normalized_Radiance_565NP',
-              wavelength='565', folder='observation_data'),
-    CalTrakColumn(outputName='I', inputName='Normalized_Radiance_763NP',
-              wavelength='763', folder='observation_data'),
-    CalTrakColumn(outputName='I', inputName='Normalized_Radiance_765NP',
-              wavelength='765', folder='observation_data'),
-    CalTrakColumn(outputName='I', inputName='Normalized_Radiance_910NP',
-              wavelength='910', folder='observation_data'),
-]
-
-cal_I_polarized = [
-    CalTrakColumn(outputName='I', inputName='Normalized_Radiance_490P',
-              wavelength='490', folder='observation_data'),
-    CalTrakColumn(outputName='I', inputName='Normalized_Radiance_670P',
-              wavelength='670', folder='observation_data'),
-    CalTrakColumn(outputName='I', inputName='Normalized_Radiance_865P',
-              wavelength='865', folder='observation_data'),
-]
-
-cal_q = [
-    CalTrakColumn(outputName='Q', inputName='Q_Stokes_490P',
-              wavelength='490', folder='observation_data'),
-    CalTrakColumn(outputName='Q', inputName='Q_Stokes_670P',
-              wavelength='670', folder='observation_data'),
-    CalTrakColumn(outputName='Q', inputName='Q_Stokes_865P',
-              wavelength='865', folder='observation_data'),
-]
-
-
-cal_u = [
-    CalTrakColumn(outputName='U', inputName='U_Stokes_490P',
-              wavelength='490', folder='observation_data'),
-    CalTrakColumn(outputName='U', inputName='U_Stokes_670P',
-              wavelength='670', folder='observation_data'),
-    CalTrakColumn(outputName='U', inputName='U_Stokes_865P',
-              wavelength='865', folder='observation_data')
-]
-
-wavelength_dict = {
-    'I_P': cal_I_polarized,
-    'I_NP': cal_I_non_polarized,
-    'Q': cal_q,
-    'U': cal_u,
-}
-
-OBSERVATION_DATA = 'observation_data'
+from L1C_Conversion_Pipeline.variables import *
 
 
 class CaltrakFile(HDFFile):
@@ -281,17 +202,17 @@ class CaltrakFile(HDFFile):
 
         measurement_dict = self.build_measurement_dict()
 
-        scale = measurement_dict['Q'][SCALE]
-        fill = measurement_dict['Q'][FILL]
+        scale = measurement_dict[Q][SCALE]
+        fill = measurement_dict[Q][FILL]
 
         # Create tensors for each of our I, Q, and U stokes datasets
-        I_arr = np.multiply(copy.deepcopy(measurement_dict['I_P'][DATA]), scale)
+        I_arr = np.multiply(copy.deepcopy(measurement_dict[I_P][DATA]), scale)
         I_arr[np.abs(I_arr) == fill] = 1
 
-        Q_arr = np.multiply(copy.deepcopy(measurement_dict['Q'][DATA]), scale)
+        Q_arr = np.multiply(copy.deepcopy(measurement_dict[Q][DATA]), scale)
         Q_arr[np.abs(Q_arr) == fill] = 1
 
-        U_arr = np.multiply(copy.deepcopy(measurement_dict['U'][DATA]), scale)
+        U_arr = np.multiply(copy.deepcopy(measurement_dict[U][DATA]), scale)
         U_arr[np.abs(U_arr) == fill] = 1
 
         # Observation Data
@@ -305,7 +226,7 @@ class CaltrakFile(HDFFile):
 
         self.check_dictionary(OBSERVATION_DATA, I_PARASOL)
 
-        tmp_data = np.swapaxes(measurement_dict['I_NP'][DATA], 2, 3)
+        tmp_data = np.swapaxes(measurement_dict[I_NP][DATA], 2, 3)
 
         # Write to Observation Data in the final dictionary
         self.final_dict[OBSERVATION_DATA][I_PARASOL] = self.write_to_dictionary(
@@ -359,9 +280,9 @@ class CaltrakFile(HDFFile):
 
         Q_over_I[
             np.where(
-                (measurement_dict['I_P'][DATA] == fill)
-                | (measurement_dict['Q'][DATA] == fill)
-                | (measurement_dict['U'][DATA] == fill)
+                (measurement_dict[I_P][DATA] == fill)
+                | (measurement_dict[Q][DATA] == fill)
+                | (measurement_dict[U][DATA] == fill)
             )] = fill
         #
         Q_over_I = np.round(Q_over_I).astype(int)
@@ -377,9 +298,9 @@ class CaltrakFile(HDFFile):
 
         U_over_I[
             np.where(
-                (measurement_dict['I_P'][DATA] == fill)
-                | (measurement_dict['Q'][DATA] == fill)
-                | (measurement_dict['U'][DATA] == fill)
+                (measurement_dict[I_P][DATA] == fill)
+                | (measurement_dict[Q][DATA] == fill)
+                | (measurement_dict[U][DATA] == fill)
             )] = fill
 
         U_over_I = np.round(U_over_I).astype(int)
