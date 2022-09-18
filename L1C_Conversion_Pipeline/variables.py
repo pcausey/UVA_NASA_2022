@@ -1,0 +1,5 @@
+LONG_NAME = 'long_name'
+UNITS = 'units'
+DATA = 'data'
+FILL = 'fill'
+SCALE = 'scale'
