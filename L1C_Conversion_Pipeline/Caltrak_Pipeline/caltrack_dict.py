@@ -1,5 +1,5 @@
 from typing import NamedTuple
-from L1C_Conversion_Pipeline.variables import *
+from L1C_Conversion_Pipeline.Caltrak_Pipeline.variables import *
 
 
 class CalTrakColumn(NamedTuple):
