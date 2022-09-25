@@ -1,7 +1,7 @@
 import h5py
 from pyhdf.SD import SD, SDC
 import os
-from L1C_Conversion_Pipeline.Caltrak_Pipeline.variables import *
+from L1C_Conversion_Pipeline.variables import *
 from netCDF4 import Dataset
 from typing import NamedTuple
 import numpy as np
@@ -65,32 +65,6 @@ class HDFFile:
             raise Exception("Unknown File Type")
 
         return output
-
-    def return_field_object(self, field_name):
-
-        field = self.return_field(field_name=field_name)
-
-        if self.file_type == self.HDF5:
-            field_obj = HDFColumn(
-                fill=field._FillValue,
-                scale=field.scale,
-                units=field.units,
-                long_name=field.long_name,
-                data=field.get()
-            )
-        elif self.file_type == self.HDF4:
-            field_obj = HDFColumn(
-                fill=field._FillValue,
-                scale=field.scale_factor,
-                units=field.units,
-                long_name=field.long_name,
-                data=field.get()
-            )
-
-        else:
-            raise Exception("Unknown File Type")
-
-        return field_obj
 
     @staticmethod
     def write_nc(variable_dict, filename, verbose=False):

@@ -173,31 +173,28 @@ def get_closest_pm25(lat1, lon1, dates, epa_data):
     return pm25
 
 
-def my_fun_function(d1_lat, d1_lon):
-    dist, index_min, min_lat, min_lon = calc_spherical_distance(d1_lat,
-                                                d1_lon,
-                                                epa_data['Latitude'],
-                                                epa_data['Longitude'], 
-                                                verbose = False)
-    
+def run_epa_data_lookup(d1_lat, d1_lon, epa_data, d1_date):
+    dist, index_min, min_lat, min_lon = calc_spherical_distance(d1_lat, d1_lon, epa_data['Latitude'],
+                                                                epa_data['Longitude'], verbose=False)
+
     # subset data to only contain closest point data
     min_dist_df = epa_data[(epa_data['Latitude'] == min_lat) &
                            (epa_data['Longitude'] == min_lon)]
 
-    # sort by date, then use .get_loc to find closest index based on 
+    # sort by date, then use .get_loc to find closest index based on
     # closest time
-    min_dist_df = min_dist_df.sort_values(by = 'Date Local')
+    min_dist_df = min_dist_df.sort_values(by='Date Local')
     min_dist_df['Date Local'] = pd.to_datetime(min_dist_df['Date Local'])
-    min_dist_df['Date'] = min_dist_df['Date Local'] # not neccessary 
+    min_dist_df['Date'] = min_dist_df['Date Local']  # not neccessary
     min_dist_df = min_dist_df.set_index('Date Local')
     min_dist_df = min_dist_df.groupby(min_dist_df.index).first()
 
-    nearest_idx = min_dist_df.index.get_loc(row['date'], method = 'nearest')
+    nearest_idx = min_dist_df.index.get_loc(d1_date, method='nearest')
     nearest_row = min_dist_df.iloc[nearest_idx]
 
-    pm25.append(nearest_row['Arithmetic Mean']) # can use other measure?
-        
-    return pm25
+    # pm25.append(nearest_row['Arithmetic Mean']) # can use other measure?
+
+    return nearest_row['Arithmetic Mean']
         
 
 def get_closest_point(df1_lat, df1_lon, df1_dates, 
@@ -239,8 +236,7 @@ def get_closest_point(df1_lat, df1_lon, df1_dates,
         nearest_row = min_dist_df.iloc[nearest_idx]
         
         closest_index.append(nearest_row['index'])
-        
-        
+
     return closest_index
     
     
@@ -252,4 +248,3 @@ def get_closest_point(df1_lat, df1_lon, df1_dates,
     
     
     
-   
