@@ -1,7 +1,7 @@
 import h5py
 from pyhdf.SD import SD, SDC
 import os
-from L1C_Conversion_Pipeline.Caltrak_Pipeline.variables import *
+from L1C_Conversion_Pipeline.variables import *
 from netCDF4 import Dataset
 from typing import NamedTuple
 import numpy as np

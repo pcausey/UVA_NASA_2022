@@ -2,7 +2,7 @@ import copy
 import numpy as np
 from L1C_Conversion_Pipeline.Caltrak_Pipeline.caltrack_dict import *
 from L1C_Conversion_Pipeline.hdf_file_class import HDFFile, HDFColumn
-from L1C_Conversion_Pipeline.Caltrak_Pipeline.variables import *
+from L1C_Conversion_Pipeline.variables import *
 
 
 class CaltrakFile(HDFFile):

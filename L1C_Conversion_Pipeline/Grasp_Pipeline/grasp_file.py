@@ -1,6 +1,6 @@
 from L1C_Conversion_Pipeline.hdf_file_class import HDFFile, HDFColumn
 from L1C_Conversion_Pipeline.Grasp_Pipeline.grasp_dict import grasp_list
-from L1C_Conversion_Pipeline.Caltrak_Pipeline.variables import *
+from L1C_Conversion_Pipeline.variables import *
 
 
 class GraspFile(HDFFile):
