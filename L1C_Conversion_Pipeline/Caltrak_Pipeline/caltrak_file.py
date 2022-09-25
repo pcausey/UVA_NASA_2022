@@ -1,7 +1,7 @@
 import copy
 import numpy as np
 from L1C_Conversion_Pipeline.Caltrak_Pipeline.caltrack_dict import *
-from L1C_Conversion_Pipeline.hdf_file_class import HDFFile
+from L1C_Conversion_Pipeline.hdf_file_class import HDFFile, HDFColumn
 from L1C_Conversion_Pipeline.Caltrak_Pipeline.variables import *
 
 
@@ -241,6 +241,20 @@ class CaltrakFile(HDFFile):
     def write_to_dictionary(scale, fill, long_name, units, data):
 
         return {SCALE: scale, LONG_NAME: long_name, FILL: fill, UNITS: units, DATA: data}
+
+    def return_field_object(self, field_name):
+
+        field = self.return_field(field_name=field_name)
+
+        field_obj = HDFColumn(
+            fill=field._FillValue,
+            scale=field.scale_factor,
+            units=field.units,
+            long_name=field.long_name,
+            data=field.get()
+        )
+
+        return field_obj
 
     def write_to_observation_data(self, new_scale, data, fill, long_name, folder):
 

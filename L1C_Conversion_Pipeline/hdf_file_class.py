@@ -66,32 +66,6 @@ class HDFFile:
 
         return output
 
-    def return_field_object(self, field_name):
-
-        field = self.return_field(field_name=field_name)
-
-        if self.file_type == self.HDF5:
-            field_obj = HDFColumn(
-                fill=field._FillValue,
-                scale=field.scale,
-                units=field.units,
-                long_name=field.long_name,
-                data=field.get()
-            )
-        elif self.file_type == self.HDF4:
-            field_obj = HDFColumn(
-                fill=field._FillValue,
-                scale=field.scale_factor,
-                units=field.units,
-                long_name=field.long_name,
-                data=field.get()
-            )
-
-        else:
-            raise Exception("Unknown File Type")
-
-        return field_obj
-
     @staticmethod
     def write_nc(variable_dict, filename, verbose=False):
         """
