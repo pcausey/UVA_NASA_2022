@@ -6,4 +6,4 @@ __py..\
 .ipynb_checkpoints
 /.ipynb_checkpoints/*
 *-checkpoint.ipynb
-/temp_dir/*
+/temp_dir/*/*
