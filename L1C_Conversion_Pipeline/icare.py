@@ -13,6 +13,14 @@ from load_dotenv import ICARE_USER, ICARE_PASSWORD, ICARE_FTP_SITE
 import h5py
 # from pyhdf.SD import SD, SDC
 
+"""
+Need to have .env file setup with filled in fields:
+    icare_user=<USERNAME>
+    icare_pw=<PASSWORD>
+    icare_ftp=ftp.icare.univ-lille1.fr
+"""
+
+
 
 def datetime_to_subpath(dt: datetime) -> str:
     """Get the year/day folder ICARE subpath from a datetime."""
@@ -176,3 +184,47 @@ class ICARESession:
                         raise FileNotFoundError(f"Could not find {filepath} in ICARE server.")
             temp_file.close()
         return local_path
+    
+    
+def get_caltrack_files_from_grasp_day(grasp_date: str, download = False) -> list:
+    """
+    Takes a GRASP date ("2008-08-05") and returns all CALTRACK files that match
+    that date
+    
+    Inputs:
+        grasp_date (str) - date to match files on (YYYY-MM-DD)
+        download (bool)  - if True: download all files in matching directory
+    
+    Outputs:
+        matching_files (list(str)) - list of files that match date from FTP
+        
+    """
+    # Create a download folder based on date
+    download_path = f'CALTRACK_download_{grasp_date}'
+    
+    # Hard code CALTRACK data location
+    caltrack_path = '/SPACEBORNE/CALIOP/CALTRACK-333m_PAR-L1B.v1.00'
+    
+    # Start an iCare Session
+    sess = ICARESession(download_path)
+    
+    # Create objects for use in path
+    grasp_date_repl = grasp_date.replace('-', '_')
+    grasp_date_obj = datetime.strptime(grasp_date, '%Y-%m-%d')
+    
+    # Obtain all file names that match based on date
+    matching_files = sess.listdir("{caltrack_path}/{grasp_year}/{grasp_date}".format(
+                                        caltrack_path = caltrack_path,
+                                        grasp_year = grasp_date_obj.year,
+                                        grasp_date = grasp_date_repl))
+    
+    # Download all files if True
+    if download == True:
+        for file in matching_files:
+            sess.get_file("{caltrack_path}/{grasp_year}/{grasp_date}/{caltrack_file}".format(
+                                        caltrack_path = caltrack_path,
+                                        grasp_year = grasp_date_obj.year,
+                                        grasp_date = grasp_date_repl,
+                                        caltrack_file = file))
+        
+    return matching_files
