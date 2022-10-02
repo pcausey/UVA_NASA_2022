@@ -23,7 +23,6 @@ Need to have .env file setup with filled in fields:
 """
 
 
-
 def datetime_to_subpath(dt: datetime) -> str:
     """Get the year/day folder ICARE subpath from a datetime."""
     return os.path.join(str(dt.year), f"{dt.year}_{dt.month:02d}_{dt.day:02d}") + "/"
@@ -231,6 +230,16 @@ def get_caltrack_files_from_grasp_day(grasp_date: str, download = False) -> list
         
     return matching_files
 
+
+def return_file_names_in_dir(dir_path):
+    from os import listdir
+    from os.path import isfile, join
+
+    only_files = [f for f in listdir(dir_path) if isfile(join(dir_path, f))]
+
+    return only_files
+
+
 def get_grasp_files(filter_string, download_path, verbose = False):
     """
     SUMMARY: downloads a daily L2 file from the grasp-open website given a 
@@ -251,12 +260,14 @@ def get_grasp_files(filter_string, download_path, verbose = False):
     """
     # Change current directory to download_path
     os.chdir(download_path)
+    query_string = ''
     
     # Create the query string for the wget method
     try:
         query_string = 'wget --recursive --no-parent "https://{GRASP_KEY}@download.grasp-cloud.com/basic/polder/polder-3/models/v2.1/l2/daily/?filter={filter_string}"'.format(
             GRASP_KEY = GRASP_KEY,
-            filter_string = filter_string)
+            filter_string = filter_string
+        )
     
     except NameError:
         print('GRASP_KEY is not found in .env file, add to file and retry')
@@ -272,7 +283,7 @@ def get_grasp_files(filter_string, download_path, verbose = False):
         print("Query complete")
 
     # Return no python object
-    return
+    return return_file_names_in_dir(download_path)
     
     
                                
