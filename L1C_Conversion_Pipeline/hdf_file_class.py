@@ -2,7 +2,7 @@ import h5py
 from pyhdf.SD import SD, SDC
 import os
 from L1C_Conversion_Pipeline.variables import *
-from netCDF4 import Dataset
+import netCDF4
 from typing import NamedTuple
 import numpy as np
 
@@ -20,6 +20,7 @@ class HDFFile:
 
     HDF4 = '.hdf'
     HDF5 = '.h5'
+    NETCDF = '.nc'
 
     def __init__(self, file_path):
         self.file_type = self.parse_file_type(file_path)
@@ -45,6 +46,8 @@ class HDFFile:
             f = h5py.File(file_path, "r")
         elif self.file_type == self.HDF4:
             f = SD(file_path, SDC.READ)
+        elif self.file_type == self.NETCDF:
+            f = netCDF4.Dataset(file_path)
         else:
             raise Exception("Unknown File Type")
 
@@ -61,6 +64,8 @@ class HDFFile:
             output = self.file[field_name]
         elif self.file_type == self.HDF4:
             output = self.file.select(field_name)
+        elif self.file_type == self.NETCDF:
+            output = self.file[field_name]
         else:
             raise Exception("Unknown File Type")
 
@@ -74,7 +79,7 @@ class HDFFile:
         When verbose = True it will output a running log of complete tasks
         """
 
-        with Dataset(filename, mode='w', format='NETCDF4') as nc:
+        with netCDF4.Dataset(filename, mode='w', format='NETCDF4') as nc:
 
             for cat in variable_dict.keys():
                 if verbose:

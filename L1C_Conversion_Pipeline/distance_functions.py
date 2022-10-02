@@ -8,6 +8,7 @@ Created on Sun Aug 28 12:02:55 2022
 import numpy as np
 import pandas as pd
 
+
 def calc_spherical_distance(lat1, lon1, 
                             lat_compare, lon_compare, 
                             loc_units = 'degrees', 
@@ -34,6 +35,8 @@ def calc_spherical_distance(lat1, lon1,
     **OUTPUTS:**
     distances (float or list) - calculated distances
     """
+
+    # TODO: limit lat_compare and lon_compare to be within 1 degree of lat1 and lat2
     
     ####################
     # CHECK LOCATION UNITS
@@ -138,15 +141,17 @@ def get_closest_pm25(lat1, lon1, dates, epa_data):
 
     # temp df to hold lat lon interest
     df = pd.DataFrame({
-            'lat':lat1,
-            'lon':lon1,
-            'date':dates
+            'lat': lat1,
+            'lon': lon1,
+            'date': dates
         })
     
     pm25 = []
     # for every row, calc distance for epa data and get minimum distance 
     # and closest date, append the pm25 from that date to list
     for idx, row in df.iterrows():
+        # TODO: Limit EPA data to specific date
+
         dist, index_min, min_lat, min_lon = calc_spherical_distance(row['lat'],
                                                 row['lon'],
                                                 epa_data['Latitude'],
@@ -174,6 +179,7 @@ def get_closest_pm25(lat1, lon1, dates, epa_data):
 
 
 def run_epa_data_lookup(d1_lat, d1_lon, epa_data, d1_date):
+
     dist, index_min, min_lat, min_lon = calc_spherical_distance(d1_lat, d1_lon, epa_data['Latitude'],
                                                                 epa_data['Longitude'], verbose=False)
 
@@ -216,6 +222,9 @@ def get_closest_point(df1_lat, df1_lon, df1_dates,
     
     closest_index = []
     for idx, row in df1.iterrows():
+
+        # TODO: Limit df2 data to specific date (or time window from caltrak?)
+
         dist, index_min, min_lat, min_lon = calc_spherical_distance(row['lat'],
                                                 row['lon'],
                                                 df2['lat'],

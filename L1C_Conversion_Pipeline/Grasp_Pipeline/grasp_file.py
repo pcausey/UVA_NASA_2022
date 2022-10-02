@@ -26,12 +26,24 @@ class GraspFile(HDFFile):
 
         field = self.return_field(field_name)
 
+        # Not all variables have scale or units
+        # hacky but works
+        try:
+            units = field.units
+        except:
+            units = "None"
+
+        try:
+            scale = field.scale_factor
+        except:
+            scale = 1
+
         field_obj = HDFColumn(
             fill=field._FillValue,
-            scale=field.scale_factor,
-            units=field.Units,
-            long_name=field.Long_Name,
-            data=field.get()
+            scale=scale,
+            units=units,
+            long_name=field.long_name,
+            data=field[:].data
         )
 
         return field_obj
