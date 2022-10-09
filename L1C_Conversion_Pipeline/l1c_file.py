@@ -16,9 +16,7 @@ class L1CFile:
     def __init__(self):
         pass
 
-    def run_group_of_caltrak_to_l1c(self, year_str, date_str):
-
-        verbose = True
+    def run_group_of_caltrak_to_l1c(self, year_str, date_str, verbose=True):
 
         # need to 'extract' date from caltrak_file_name
         caltrak_file_date = date_str.replace('_', '-')
@@ -29,7 +27,8 @@ class L1CFile:
 
         # pull list of caltrak files:
         caltrak_files = self.return_files_in_caltrak_folder(year_str, date_str, self.CALTRAK_PATH)
-        caltrak_files = [caltrak_files[0]]
+        caltrak_files = caltrak_files[0:3]
+
         if verbose:
             print(caltrak_files)
             print("\n\n")
@@ -38,7 +37,6 @@ class L1CFile:
             self.run_single_l1c_file(file_name, year_str, date_str, verbose, epa)
 
     def run_single_l1c_file(self, file_name, year_str, date_str, verbose, epa):
-        # print(file_name)
 
         # download caltrak file
         tic = time.perf_counter()
@@ -72,7 +70,8 @@ class L1CFile:
             print(f"Start EPA Match")
 
         epa.run_epa_matching_to_caltrak(caltrak)
-        caltrak['epa_data']['pm25'] = epa.epa_dict
+        caltrak.final_dict['epa_data'] = {}
+        caltrak.final_dict['epa_data']['pm25'] = epa.epa_dict
 
         toc = time.perf_counter()
 
@@ -96,7 +95,7 @@ class L1CFile:
             print(f"Completed File Write: {toc - tic:0.4f} seconds")
 
         # delete caltrak file from TMP Folder
-        self.delete_file(self.CALTRAK_PATH + file_name)
+        self.delete_file(self.CALTRAK_PATH, file_name)
 
     def return_files_in_caltrak_folder(self, year_str, date_str, download_path):
 
@@ -125,7 +124,7 @@ class L1CFile:
                             open(download_path + file_name, 'wb').write)
 
     @staticmethod
-    def delete_file(file_name, file_dir):
+    def delete_file(file_dir, file_name):
         import os
 
         if os.path.exists(file_dir + file_name):
