@@ -35,8 +35,6 @@ def calc_spherical_distance(lat1, lon1,
     **OUTPUTS:**
     distances (float or list) - calculated distances
     """
-
-    # TODO: limit lat_compare and lon_compare to be within 1 degree of lat1 and lat2
     
     ####################
     # CHECK LOCATION UNITS
@@ -179,6 +177,15 @@ def get_closest_pm25(lat1, lon1, dates, epa_data):
 
 
 def run_epa_data_lookup(d1_lat, d1_lon, epa_data, d1_date):
+    
+    #TE CHANGES: FILTER EPA DATA
+    lat_mask = (epa_data['Latitude'] >= d1_lat - 1) & (epa_data['Latitude'] <= d1_lat + 1)
+    lon_mask = (epa_data['Longitude'] >= d1_lon - 1) & (epa_data['Longitude'] <= d1_lon + 1)
+    epa_data = epa_data[lat_mask & lon_mask]
+    
+    # Could change to have as fill value
+    if len(epa_data) == 0:
+        return "NO SITES WITHIN DISTANCE RANGE"
 
     dist, index_min, min_lat, min_lon = calc_spherical_distance(d1_lat, d1_lon, epa_data['Latitude'],
                                                                 epa_data['Longitude'], verbose=False)
@@ -197,6 +204,11 @@ def run_epa_data_lookup(d1_lat, d1_lon, epa_data, d1_date):
 
     nearest_idx = min_dist_df.index.get_loc(d1_date, method='nearest')
     nearest_row = min_dist_df.iloc[nearest_idx]
+    
+    #TE CHANGES: RESTRICT DATE RANGE, needs further testing
+    # Could change to have as fill value
+    if pd.Timedelta(d1_date - nearest_row['Date Local']).seconds/3600 > 48:
+        return "NO SITES WITHIN TIME RANGE"
 
     # pm25.append(nearest_row['Arithmetic Mean']) # can use other measure?
 
