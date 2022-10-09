@@ -57,8 +57,8 @@ class ICARESession:
             os.makedirs(self.temp_dir, exist_ok=True)
         self.dir_tree = {}  # keep track of the directory tree of ICARE to cut down on FTP calls
 
-    def __del__(self):
-        self.cleanup()
+    # def __del__(self):
+    #     self.cleanup()
 
     def _get_rec(self, subdict, key_list):
         """Recursive get."""

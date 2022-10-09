@@ -176,43 +176,44 @@ def get_closest_pm25(lat1, lon1, dates, epa_data):
     return pm25
 
 
-def run_epa_data_lookup(d1_lat, d1_lon, epa_data, d1_date):
+def run_epa_data_lookup(d1_lat, d1_lon, epa_data, fill_value):
     
-    #TE CHANGES: FILTER EPA DATA
+    # TE CHANGES: FILTER EPA DATA
     lat_mask = (epa_data['Latitude'] >= d1_lat - 1) & (epa_data['Latitude'] <= d1_lat + 1)
     lon_mask = (epa_data['Longitude'] >= d1_lon - 1) & (epa_data['Longitude'] <= d1_lon + 1)
-    epa_data = epa_data[lat_mask & lon_mask]
-    
+    # We're prefiltering epa_data on date before passing into this function
+    # date_mask = (epa_data['Date Local'] == d1_date)
+
+    # If no epa data meets the lat/long/date criteria, return fill values
+    epa_data = epa_data[lat_mask & lon_mask]  # & date_mask
+
     # Could change to have as fill value
     if len(epa_data) == 0:
-        return "NO SITES WITHIN DISTANCE RANGE"
+        return fill_value
+    # Else: run the lookup
+    else:
+        dist, index_min, min_lat, min_lon = calc_spherical_distance(d1_lat, d1_lon, epa_data['Latitude'],
+                                                                    epa_data['Longitude'], verbose=False)
 
-    dist, index_min, min_lat, min_lon = calc_spherical_distance(d1_lat, d1_lon, epa_data['Latitude'],
-                                                                epa_data['Longitude'], verbose=False)
+        # subset data to only contain closest point data
+        min_dist_df = epa_data[(epa_data['Latitude'] == min_lat) &
+                               (epa_data['Longitude'] == min_lon)]
 
-    # subset data to only contain closest point data
-    min_dist_df = epa_data[(epa_data['Latitude'] == min_lat) &
-                           (epa_data['Longitude'] == min_lon)]
+        # sort by date, then use .get_loc to find closest index based on
+        # closest time
+        # min_dist_df = min_dist_df.sort_values(by='Date Local')
+        # min_dist_df['Date Local'] = pd.to_datetime(min_dist_df['Date Local'])
+        # min_dist_df['Date'] = min_dist_df['Date Local']  # not neccessary
+        # min_dist_df = min_dist_df.set_index('Date Local')
 
-    # sort by date, then use .get_loc to find closest index based on
-    # closest time
-    min_dist_df = min_dist_df.sort_values(by='Date Local')
-    min_dist_df['Date Local'] = pd.to_datetime(min_dist_df['Date Local'])
-    min_dist_df['Date'] = min_dist_df['Date Local']  # not neccessary
-    min_dist_df = min_dist_df.set_index('Date Local')
-    min_dist_df = min_dist_df.groupby(min_dist_df.index).first()
+        # min_dist_df = min_dist_df.groupby(min_dist_df.index).first()
 
-    nearest_idx = min_dist_df.index.get_loc(d1_date, method='nearest')
-    nearest_row = min_dist_df.iloc[nearest_idx]
-    
-    #TE CHANGES: RESTRICT DATE RANGE, needs further testing
-    # Could change to have as fill value
-    if pd.Timedelta(d1_date - nearest_row['Date Local']).seconds/3600 > 48:
-        return "NO SITES WITHIN TIME RANGE"
+        # nearest_idx = min_dist_df.index.get_loc(d1_date, method='nearest')
+        # nearest_row = min_dist_df.iloc[nearest_idx]
 
-    # pm25.append(nearest_row['Arithmetic Mean']) # can use other measure?
+        # pm25.append(nearest_row['Arithmetic Mean']) # can use other measure?
 
-    return nearest_row['Arithmetic Mean']
+        return min_dist_df['Arithmetic Mean'][0]
         
 
 def get_closest_point(df1_lat, df1_lon, df1_dates, 
