@@ -7,3 +7,4 @@ __py..\
 /.ipynb_checkpoints/*
 *-checkpoint.ipynb
 /temp_dir/*/*
+/credentials/*
