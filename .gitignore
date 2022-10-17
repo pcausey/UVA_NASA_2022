@@ -8,3 +8,4 @@ __py..\
 *-checkpoint.ipynb
 /temp_dir/*/*
 /credentials/*
+.DS_Store
