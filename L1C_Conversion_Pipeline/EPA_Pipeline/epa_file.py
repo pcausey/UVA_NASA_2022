@@ -31,9 +31,11 @@ class EPAFile:
 
         epa_pm25_data = np.array(epa_pm25_data, dtype=np.float32)
 
-        self.epa_dict = {DATA: epa_pm25_data,
-                    FILL: fill_value,
-                    LONG_NAME: 'EPA Measured Particulate Matter 2.5nm',
-                    SCALE: 1.0,
-                    UNITS: 'nm'}
+        self.epa_dict = {
+            DATA: epa_pm25_data,
+            FILL: fill_value,
+            LONG_NAME: 'EPA Measured Particulate Matter 2.5nm',
+            SCALE: 1.0,
+            UNITS: 'nm'
+        }
 

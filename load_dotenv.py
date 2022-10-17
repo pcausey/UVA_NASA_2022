@@ -12,4 +12,5 @@ GRASP_KEY = os.environ.get("grasp_key")
 
 DATA_PATH = os.environ.get("data_path")
 TMP_PATH = os.environ.get("tmp_path")
+CRED_PATH = os.environ.get("credentials_path")
 

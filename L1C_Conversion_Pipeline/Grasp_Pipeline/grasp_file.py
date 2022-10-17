@@ -26,23 +26,34 @@ class GraspFile(HDFFile):
 
         field = self.return_field(field_name)
 
-        # Not all variables have scale or units
-        # hacky but works
+        # Preferred process compared with 'hasattr'
+        # If attribute doesn't exist, will throw attribute error
+        # https://stackoverflow.com/questions/610883/how-do-i-determine-if-an-object-has-an-attribute-in-python
         try:
             units = field.units
-        except:
+        except AttributeError:
             units = "None"
 
         try:
             scale = field.scale_factor
-        except:
+        except AttributeError:
             scale = 1
 
+        try:
+            long_name = field.long_name
+        except AttributeError:
+            long_name = field_name
+
+        try:
+            fill_value = field._FillValue
+        except AttributeError:
+            fill_value = 99999
+
         field_obj = HDFColumn(
-            fill=field._FillValue,
+            fill=fill_value,
             scale=scale,
             units=units,
-            long_name=field.long_name,
+            long_name=long_name,
             data=field[:].data
         )
 
@@ -59,3 +70,22 @@ class GraspFile(HDFFile):
     def write_to_dictionary(scale, fill, long_name, units, data):
 
         return {SCALE: scale, LONG_NAME: long_name, FILL: fill, UNITS: units, DATA: data}
+
+    # def run_epa_matching_to_caltrak(self, caltrak):
+    #     fill_value = -99999.0
+    #
+    #     grasp_pm25_data = []
+    #
+    #     for i in range(0, len(caltrak.final_dict['geolocation_data']['latitude']['data'][0])):
+    #         lat = caltrak.final_dict['geolocation_data']['latitude']['data'][0][i]
+    #         lon = caltrak.final_dict['geolocation_data']['longitude']['data'][0][i]
+    #
+    #         epa_pm25_data.append(run_epa_data_lookup(lat, lon, self.epa_data, fill_value))
+    #
+    #     epa_pm25_data = np.array(epa_pm25_data, dtype=np.float32)
+    #
+    #     self.epa_dict = {DATA: epa_pm25_data,
+    #                 FILL: fill_value,
+    #                 LONG_NAME: 'EPA Measured Particulate Matter 2.5nm',
+    #                 SCALE: 1.0,
+    #                 UNITS: 'nm'}
