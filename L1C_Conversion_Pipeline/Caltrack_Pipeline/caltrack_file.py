@@ -1,11 +1,11 @@
 import copy
 import numpy as np
-from L1C_Conversion_Pipeline.Caltrak_Pipeline.caltrack_dict import *
+from L1C_Conversion_Pipeline.Caltrack_Pipeline.caltrack_dict import *
 from L1C_Conversion_Pipeline.hdf_file_class import HDFFile, HDFColumn
 from L1C_Conversion_Pipeline.variables import *
 
 
-class CaltrakFile(HDFFile):
+class CaltrackFile(HDFFile):
 
     def __init__(self, file_path):
         HDFFile.__init__(self, file_path)

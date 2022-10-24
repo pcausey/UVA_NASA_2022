@@ -1,12 +1,17 @@
+import numpy as np
+import pandas as pd
 from L1C_Conversion_Pipeline.hdf_file_class import HDFFile, HDFColumn
 from L1C_Conversion_Pipeline.Grasp_Pipeline.grasp_dict import grasp_list
 from L1C_Conversion_Pipeline.variables import *
+from L1C_Conversion_Pipeline.distance_functions import run_grasp_data_lookup
 
 
 class GraspFile(HDFFile):
     def __init__(self, file_path):
         HDFFile.__init__(self, file_path)
         self.final_dict = {}
+        self.grasp_matching_dict = {}
+        self.fill_value = -99999.0
 
     def build_final_dict(self):
 
@@ -47,14 +52,20 @@ class GraspFile(HDFFile):
         try:
             fill_value = field._FillValue
         except AttributeError:
-            fill_value = 99999
+            fill_value = self.fill_value
+
+        # convert into on dimensional array
+        # we can later convert the whole dataset to a dataframe
+        # for matching to caltrack file
+        data = field[:].data
+        data_v2 = np.reshape(data, data.size)
 
         field_obj = HDFColumn(
             fill=fill_value,
             scale=scale,
             units=units,
             long_name=long_name,
-            data=field[:].data
+            data=data_v2
         )
 
         return field_obj
@@ -71,21 +82,45 @@ class GraspFile(HDFFile):
 
         return {SCALE: scale, LONG_NAME: long_name, FILL: fill, UNITS: units, DATA: data}
 
-    # def run_epa_matching_to_caltrak(self, caltrak):
-    #     fill_value = -99999.0
-    #
-    #     grasp_pm25_data = []
-    #
-    #     for i in range(0, len(caltrak.final_dict['geolocation_data']['latitude']['data'][0])):
-    #         lat = caltrak.final_dict['geolocation_data']['latitude']['data'][0][i]
-    #         lon = caltrak.final_dict['geolocation_data']['longitude']['data'][0][i]
-    #
-    #         epa_pm25_data.append(run_epa_data_lookup(lat, lon, self.epa_data, fill_value))
-    #
-    #     epa_pm25_data = np.array(epa_pm25_data, dtype=np.float32)
-    #
-    #     self.epa_dict = {DATA: epa_pm25_data,
-    #                 FILL: fill_value,
-    #                 LONG_NAME: 'EPA Measured Particulate Matter 2.5nm',
-    #                 SCALE: 1.0,
-    #                 UNITS: 'nm'}
+    def build_grasp_df(self):
+        dict_to_df = {}
+        for item in self.final_dict['grasp']:
+            dict_to_df[item] = self.final_dict['grasp'][item]['data']
+
+        grasp_df = pd.DataFrame(dict_to_df)
+        grasp_df = grasp_df.fillna(self.fill_value)
+
+        # Look for where pm25 isn't empty (we'll just default to fill value if it is)
+        pm25_mask = (grasp_df['pm25'] != self.fill_value)
+
+        grasp_df = grasp_df[pm25_mask]
+
+        return grasp_df
+
+    def run_grasp_matching_to_caltrak(self, caltrack):
+
+        grasp_pm25_data = []
+
+        grasp_df = self.build_grasp_df()
+
+        len_caltrack = len(caltrack.final_dict['geolocation_data']['latitude']['data'][0])
+
+        for i in range(0, len_caltrack):
+            lat = caltrack.final_dict['geolocation_data']['latitude']['data'][0][i]
+            lon = caltrack.final_dict['geolocation_data']['longitude']['data'][0][i]
+
+            grasp_pm25_data.append(run_grasp_data_lookup(lat, lon, grasp_df, self.fill_value))
+
+            if i % 1000 == 0:
+                print(f"Completed {i} out of {len_caltrack}")
+                # break
+
+        grasp_pm25_data = np.array(grasp_pm25_data, dtype=np.float32)
+
+        self.grasp_matching_dict = {
+            DATA: grasp_pm25_data,
+            FILL: self.fill_value,
+            LONG_NAME: 'Grasp Calculated Particulate Matter 2.5nm',
+            SCALE: 1.0,
+            UNITS: 'nm'
+        }

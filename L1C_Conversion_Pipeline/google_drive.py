@@ -1,12 +1,12 @@
 import pickle
 import os
-
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
 import io
-from google.auth.transport.requests import Request
-from googleapiclient.http import MediaIoBaseDownload
 import shutil
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseDownload
+from googleapiclient.errors import HttpError
 from tabulate import tabulate
 from load_dotenv import CRED_PATH
 
@@ -45,17 +45,36 @@ class GoogleDrive:
         """Shows basic usage of the Drive v3 API.
         Prints the names and ids of the first 5 files the user has access to.
         """
-        # Call the Drive v3 API
-        results = self.service.files().list(
-            supportsAllDrives=True,
-            includeItemsFromAllDrives=True,
-            fields="files(id, driveId, name, mimeType, size, parents, modifiedTime)",
-            q="parents in '1E_OlVsKhnbovurUkSXcINN3A0Y5QaQlu'").execute()
+        try:
+            page_token = None
+            files = []
 
-        for item in results['files']:
-            item['file_date'] = self.return_file_date(item['name'])
+            while True:
 
-        return results
+                # Call the Drive v3 API
+                response = self.service.files().list(
+                    supportsAllDrives=True,
+                    includeItemsFromAllDrives=True,
+                    pageSize=100,
+                    fields="nextPageToken, "
+                           "files(id, driveId, name, mimeType, size, parents, modifiedTime)",
+                    q="parents in '1E_OlVsKhnbovurUkSXcINN3A0Y5QaQlu'",
+                    pageToken=page_token
+                ).execute()
+
+                files.extend(response.get('files', []))
+                page_token = response.get('nextPageToken', None)
+                if page_token is None:
+                    break
+
+            for file in files:
+                file['file_date'] = self.return_file_date(file['name'])
+
+        except HttpError as error:
+            print(f'An error occurred {error}')
+            files = None
+
+        return files
 
     @staticmethod
     def match_string(find, in_str):

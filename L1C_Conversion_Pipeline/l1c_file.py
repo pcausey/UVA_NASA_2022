@@ -1,4 +1,4 @@
-from L1C_Conversion_Pipeline.Caltrak_Pipeline.caltrak_file import CaltrakFile
+from L1C_Conversion_Pipeline.Caltrack_Pipeline.caltrack_file import CaltrackFile
 from L1C_Conversion_Pipeline.Grasp_Pipeline.grasp_file import GraspFile
 from L1C_Conversion_Pipeline.google_drive import GoogleDrive
 from L1C_Conversion_Pipeline.EPA_Pipeline.epa_file import *
@@ -8,8 +8,8 @@ from load_dotenv import TMP_PATH
 
 class L1CFile:
     GRASP_PATH = TMP_PATH + 'grasp_files/'
-    ICARE_CALTRAK_PATH = '/SPACEBORNE/CALIOP/CALTRACK-333m_PAR-L1B.v1.00'
-    CALTRAK_PATH = TMP_PATH + 'caltrak_files/'
+    ICARE_CALTRACK_PATH = '/SPACEBORNE/CALIOP/CALTRACK-333m_PAR-L1B.v1.00'
+    CALTRACK_PATH = TMP_PATH + 'caltrack_files/'
     EPA_PATH = TMP_PATH + 'epa_files/'
     EPA_FILE_NAME = 'epa_data_2008-2015.csv'
     L1C_PATH = TMP_PATH + 'l1c_files/'
@@ -17,25 +17,22 @@ class L1CFile:
     def __init__(self):
         pass
 
-    def run_full_pipeline_for_one_day(self, year, date_str, date_str_dash):
-        verbose = True
+    def run_full_pipeline_for_one_day(self, year, date_str, date_str_dash, verbose=True):
 
         list_grasp = self.return_list_of_grasp_files()
 
-        list_to_run = []
-        for google_doc in list_grasp['files']:
-            if date_str in google_doc['name']:
-                list_to_run.append(google_doc)
+        # list_to_run = [file for file in list_grasp if date_str in file['name']]
+        list_to_run = list(filter(lambda file: date_str in file['name'], list_grasp))
 
         for google_doc in list_to_run:
             grasp, unzip_path, download_path = self.download_grasp_file(google_doc, verbose)
 
-            self.run_group_of_caltrak_to_l1c(year, date_str_dash, grasp, verbose)
+            self.run_group_of_caltrack_to_l1c(year, date_str_dash, grasp, verbose)
 
             # self.delete_file(unzip_path, '')
             # self.delete_file(download_path, '')
 
-    def run_group_of_caltrak_to_l1c(self, year_str, date_str, grasp, verbose=True):
+    def run_group_of_caltrack_to_l1c(self, year_str, date_str, grasp, verbose=True):
 
         # Filter EPA Data to just a particular date
         #   Only need to do this once per 'Day's data
@@ -44,37 +41,43 @@ class L1CFile:
         # need to 'extract' date from caltrak_file_name
         caltrak_file_date = date_str.replace('-', '_')
 
-        # pull list of caltrak files:
-        caltrak_files = self.return_files_in_caltrak_folder(year_str, caltrak_file_date, self.CALTRAK_PATH)
-        caltrak_files = caltrak_files[0:3]
+        # pull list of caltrack files:
+        caltrak_files = self.return_files_in_caltrak_folder(year_str, caltrak_file_date, self.CALTRACK_PATH)
+        # caltrak_files = caltrak_files[0:3]
 
         if verbose:
             print(caltrak_files)
             print("\n\n")
 
         for file_name in caltrak_files:
+            tic = time.perf_counter()
+
             self.run_single_l1c_file(file_name, year_str, caltrak_file_date, verbose, epa, grasp)
+
+            toc = time.perf_counter()
+
+            print(f"File Conversion {file_name}: {toc - tic:0.4f} seconds")
 
     def run_single_l1c_file(self, file_name, year_str, date_str, verbose, epa, grasp):
 
-        caltrak = self.run_caltrack_extraction(file_name, year_str, date_str, verbose)
+        caltrack = self.run_caltrack_extraction(file_name, year_str, date_str, verbose)
 
-        caltrak = self.run_epa_matching(caltrak, epa, verbose)
+        caltrack = self.run_epa_matching(caltrack, epa, verbose)
 
-        caltrak = self.run_grasp_matching(caltrak, grasp, verbose)
+        caltrack = self.run_grasp_matching(caltrack, grasp, verbose)
 
-        self.write_to_l1c_file(caltrak, file_name, verbose)
+        self.write_to_l1c_file(caltrack, file_name, verbose)
 
-        # delete caltrak file from TMP Folder
-        self.delete_file(self.CALTRAK_PATH, file_name)
+        # delete caltrack file from TMP Folder
+        self.delete_file(self.CALTRACK_PATH, file_name)
 
     def run_caltrack_extraction(self, file_name, year_str, date_str, verbose=False):
-        # download caltrak file
+        # download caltrack file
         tic = time.perf_counter()
         if verbose:
             print(f"Start Download: {file_name}")
 
-        self.download_caltrak_file(year_str, date_str, self.CALTRAK_PATH, file_name)
+        self.download_caltrack_file(year_str, date_str, self.CALTRACK_PATH, file_name)
         toc = time.perf_counter()
 
         if verbose:
@@ -84,62 +87,76 @@ class L1CFile:
         #    Run Caltrak data extraction -> final_dict
         tic = time.perf_counter()
         if verbose:
-            print(f"Start Build Caltrak Final Dict")
+            print(f"Start Build Caltrack Final Dict")
 
-        caltrak = CaltrakFile(self.CALTRAK_PATH + file_name)
+        caltrak = CaltrackFile(self.CALTRACK_PATH + file_name)
         caltrak.build_final_dict()
 
         toc = time.perf_counter()
         if verbose:
-            print(f"Completed Caltrak Final Dict: {toc - tic:0.4f} seconds")
+            print(f"Completed Caltrack Final Dict: {toc - tic:0.4f} seconds")
 
         return caltrak
 
-    def write_to_l1c_file(self, caltrak, file_name, verbose=False):
+    def write_to_l1c_file(self, caltrack, file_name, verbose=False):
         #    Save Output File
         tic = time.perf_counter()
         write_name = self.L1C_PATH + 'Processed_' + file_name.replace('.hdf', '.nc')
         if verbose:
             print(f"Start File Write: {write_name}")
 
-        caltrak.write_nc(caltrak.final_dict, write_name, verbose=verbose)
+        caltrack.write_nc(caltrack.final_dict, write_name, verbose=verbose)
 
         toc = time.perf_counter()
         if verbose:
             print(f"Completed File Write: {toc - tic:0.4f} seconds")
 
     @staticmethod
-    def run_epa_matching(caltrak, epa, verbose=False):
-        #    Co-locate EPA to Caltrak
-        #       Find assoicated 'indexes' in EPA (distance function)
-        #       Extract all datapoints and merge to Caltrak
+    def run_epa_matching(caltrack, epa, verbose=False):
+        #    Co-locate EPA to Caltrack
+        #       Find associated 'indexes' in EPA (distance function)
+        #       Extract all data points and merge to Caltrack
         tic = time.perf_counter()
         if verbose:
             print(f"Start EPA Match")
 
-        epa.run_epa_matching_to_caltrak(caltrak)
-        caltrak.final_dict['epa_data'] = {}
-        caltrak.final_dict['epa_data']['pm25'] = epa.epa_dict
+        epa.run_epa_matching_to_caltrak(caltrack)
+        caltrack.final_dict['epa_data'] = {}
+        caltrack.final_dict['epa_data']['pm25_epa'] = epa.epa_dict
 
         toc = time.perf_counter()
 
         if verbose:
             print(f"Completed EPA Match: {toc - tic:0.4f} seconds")
 
-        return caltrak
+        return caltrack
 
     @staticmethod
-    def run_grasp_matching(caltrak, grasp, verbose):
-        # Co-locate Grasp to Caltrak
-        #       Find assoicated 'indexes' in Grasp
-        #       Extract all datapoints and merge to Caltrak
+    def run_grasp_matching(caltrack, grasp, verbose):
 
-        return caltrak
+        # Co-locate Grasp to Caltrack
+        #       Find associated 'indexes' in Grasp
+        #       Extract all data points and merge to Caltrack
+
+        tic = time.perf_counter()
+        if verbose:
+            print(f"Start Grasp Match")
+
+        grasp.run_grasp_matching_to_caltrak(caltrack)
+        caltrack.final_dict['grasp_data'] = {}
+        caltrack.final_dict['grasp_data']['pm25_grasp'] = grasp.grasp_matching_dict
+
+        toc = time.perf_counter()
+
+        if verbose:
+            print(f"Completed Grasp Match: {toc - tic:0.4f} seconds")
+
+        return caltrack
 
     def return_files_in_caltrak_folder(self, year_str, date_str, download_path):
 
         # Hard code CALTRACK data location
-        ftp_path = self.ICARE_CALTRAK_PATH
+        ftp_path = self.ICARE_CALTRACK_PATH
 
         # Start an iCare Session
         sess = ICARESession(download_path)
@@ -150,9 +167,9 @@ class L1CFile:
 
         return matching_files
 
-    def download_caltrak_file(self, year_str, date_str, download_path, file_name):
+    def download_caltrack_file(self, year_str, date_str, download_path, file_name):
 
-        ftp_path = self.ICARE_CALTRAK_PATH
+        ftp_path = self.ICARE_CALTRACK_PATH
 
         # Start an iCare Session
         sess = ICARESession(download_path)
@@ -222,5 +239,6 @@ if __name__ == "__main__":
     l1c.run_full_pipeline_for_one_day(
         year='2008',
         date_str='20080524',
-        date_str_dash='2008-05-24'
+        date_str_dash='2008-05-24',
+        verbose=False
     )

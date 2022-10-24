@@ -8,4 +8,4 @@ if __name__ == '__main__':
 
     # Grasp Extraction at this level
 
-    l1c.run_group_of_caltrak_to_l1c(year_str, date_str)
+    l1c.run_group_of_caltrack_to_l1c(year_str, date_str)

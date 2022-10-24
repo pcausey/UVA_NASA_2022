@@ -11,10 +11,10 @@ import pandas as pd
 
 def calc_spherical_distance(lat1, lon1, 
                             lat_compare, lon_compare, 
-                            loc_units = 'degrees', 
-                            dist_units = 'km',
-                            dist_type = 'great_circle',
-                            verbose = True):
+                            loc_units='degrees',
+                            dist_units='km',
+                            dist_type='great_circle',
+                            verbose=True):
     
     """
     **SUMMARY:**
@@ -192,28 +192,46 @@ def run_epa_data_lookup(d1_lat, d1_lon, epa_data, fill_value):
         return fill_value
     # Else: run the lookup
     else:
-        dist, index_min, min_lat, min_lon = calc_spherical_distance(d1_lat, d1_lon, epa_data['Latitude'],
-                                                                    epa_data['Longitude'], verbose=False)
+        dist, index_min, min_lat, min_lon = \
+            calc_spherical_distance(
+                d1_lat, d1_lon,
+                epa_data['Latitude'], epa_data['Longitude'],
+                verbose=False
+            )
 
         # subset data to only contain closest point data
         min_dist_df = epa_data[(epa_data['Latitude'] == min_lat) &
                                (epa_data['Longitude'] == min_lon)]
 
-        # sort by date, then use .get_loc to find closest index based on
-        # closest time
-        # min_dist_df = min_dist_df.sort_values(by='Date Local')
-        # min_dist_df['Date Local'] = pd.to_datetime(min_dist_df['Date Local'])
-        # min_dist_df['Date'] = min_dist_df['Date Local']  # not neccessary
-        # min_dist_df = min_dist_df.set_index('Date Local')
-
-        # min_dist_df = min_dist_df.groupby(min_dist_df.index).first()
-
-        # nearest_idx = min_dist_df.index.get_loc(d1_date, method='nearest')
-        # nearest_row = min_dist_df.iloc[nearest_idx]
-
-        # pm25.append(nearest_row['Arithmetic Mean']) # can use other measure?
-
         return min_dist_df['Arithmetic Mean'][0]
+
+
+def run_grasp_data_lookup(d1_lat, d1_lon, grasp_df, fill_value):
+    # Limit search to 1 degree in all directions
+    lat_mask = (grasp_df['latitude'] >= d1_lat - 1) & (grasp_df['latitude'] <= d1_lat + 1)
+    lon_mask = (grasp_df['longitude'] >= d1_lon - 1) & (grasp_df['longitude'] <= d1_lon + 1)
+
+    # Look for where pm25 isn't empty (we'll just default to fill value if it is)
+    # pm25_mask = (grasp_df['pm25'] != fill_value)
+
+    grasp_data = grasp_df[lat_mask & lon_mask]  # & pm25_mask
+
+    if len(grasp_data) == 0:
+        return fill_value
+
+    else:
+        dist, index_min, min_lat, min_lon = \
+            calc_spherical_distance(
+                d1_lat, d1_lon,
+                grasp_data['latitude'], grasp_data['longitude'],
+                verbose=False
+            )
+
+        # subset data to only contain closest point data
+        min_dist_df = grasp_data[(grasp_data['latitude'] == min_lat) &
+                                 (grasp_data['longitude'] == min_lon)]
+
+        return min_dist_df['pm25'].values[0]
         
 
 def get_closest_point(df1_lat, df1_lon, df1_dates, 
@@ -236,7 +254,7 @@ def get_closest_point(df1_lat, df1_lon, df1_dates,
     closest_index = []
     for idx, row in df1.iterrows():
 
-        # TODO: Limit df2 data to specific date (or time window from caltrak?)
+        # TODO: Limit df2 data to specific date (or time window from caltrack?)
 
         dist, index_min, min_lat, min_lon = calc_spherical_distance(row['lat'],
                                                 row['lon'],

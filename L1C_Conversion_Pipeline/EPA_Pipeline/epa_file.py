@@ -18,14 +18,14 @@ class EPAFile:
 
         return epa_data
 
-    def run_epa_matching_to_caltrak(self, caltrak):
+    def run_epa_matching_to_caltrak(self, caltrack):
         fill_value = -99999.0
 
         epa_pm25_data = []
 
-        for i in range(0, len(caltrak.final_dict['geolocation_data']['latitude']['data'][0])):
-            lat = caltrak.final_dict['geolocation_data']['latitude']['data'][0][i]
-            lon = caltrak.final_dict['geolocation_data']['longitude']['data'][0][i]
+        for i in range(0, len(caltrack.final_dict['geolocation_data']['latitude']['data'][0])):
+            lat = caltrack.final_dict['geolocation_data']['latitude']['data'][0][i]
+            lon = caltrack.final_dict['geolocation_data']['longitude']['data'][0][i]
 
             epa_pm25_data.append(run_epa_data_lookup(lat, lon, self.epa_data, fill_value))
 

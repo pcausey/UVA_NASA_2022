@@ -6,6 +6,10 @@ import netCDF4
 from typing import NamedTuple
 import numpy as np
 
+HDF4 = '.hdf'
+HDF5 = '.h5'
+NETCDF = '.nc'
+
 
 class HDFColumn(NamedTuple):
     """ Class for holding the conversion dictionary column details"""
@@ -17,10 +21,6 @@ class HDFColumn(NamedTuple):
 
 
 class HDFFile:
-
-    HDF4 = '.hdf'
-    HDF5 = '.h5'
-    NETCDF = '.nc'
 
     def __init__(self, file_path):
         self.file_type = self.parse_file_type(file_path)
@@ -42,11 +42,11 @@ class HDFFile:
                 file_type - extension used by other functions to access data
         """
 
-        if self.file_type == self.HDF5:
+        if self.file_type == HDF5:
             f = h5py.File(file_path, "r")
-        elif self.file_type == self.HDF4:
+        elif self.file_type == HDF4:
             f = SD(file_path, SDC.READ)
-        elif self.file_type == self.NETCDF:
+        elif self.file_type == NETCDF:
             f = netCDF4.Dataset(file_path)
         else:
             raise Exception("Unknown File Type")
@@ -60,11 +60,11 @@ class HDFFile:
             Outputs: List of field values
         """
 
-        if self.file_type == self.HDF5:
+        if self.file_type == HDF5:
             output = self.file[field_name]
-        elif self.file_type == self.HDF4:
+        elif self.file_type == HDF4:
             output = self.file.select(field_name)
-        elif self.file_type == self.NETCDF:
+        elif self.file_type == NETCDF:
             output = self.file[field_name]
         else:
             raise Exception("Unknown File Type")
