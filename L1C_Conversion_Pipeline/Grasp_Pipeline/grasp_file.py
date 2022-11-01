@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from L1C_Conversion_Pipeline.hdf_file_class import HDFFile, HDFColumn
-from L1C_Conversion_Pipeline.Grasp_Pipeline.grasp_dict import grasp_list
+from L1C_Conversion_Pipeline.Grasp_Pipeline.grasp_dict import grasp_list, GRASP_LATITUDE, GRASP_LONGITUDE
 from L1C_Conversion_Pipeline.variables import *
 from L1C_Conversion_Pipeline.distance_functions import run_grasp_data_lookup
 
@@ -16,14 +16,12 @@ class GraspFile(HDFFile):
     def build_final_dict(self):
 
         for item in grasp_list:
-            self.check_sub_dictionary(self.final_dict, item.folder)
-
             # create the dictionary within the dictionary for this field
-            self.final_dict[item.folder][item.outputName] = {}
+            self.final_dict[item.outputName] = {}
 
             field_obj = self.return_field_object(item.inputName)
 
-            self.final_dict[item.folder][item.outputName] = self.write_to_dictionary(
+            self.final_dict[item.outputName] = self.write_to_dictionary(
                 field_obj.scale, field_obj.fill, field_obj.long_name, field_obj.units, field_obj.data
             )
 
@@ -84,24 +82,29 @@ class GraspFile(HDFFile):
 
     def build_grasp_df(self):
         dict_to_df = {}
-        for item in self.final_dict['grasp']:
-            dict_to_df[item] = self.final_dict['grasp'][item]['data']
+        for item in self.final_dict:
+            dict_to_df[item] = self.final_dict[item][DATA]
 
         grasp_df = pd.DataFrame(dict_to_df)
+
+        # This works because the Grasp File has all its 'fill values' as 'NaN'
         grasp_df = grasp_df.fillna(self.fill_value)
 
-        # Look for where pm25 isn't empty (we'll just default to fill value if it is)
-        pm25_mask = (grasp_df['pm25'] != self.fill_value)
+        # Look for where Latitude and Longitude aren't empty
+        lat_mask = (grasp_df[GRASP_LATITUDE] != self.final_dict[GRASP_LATITUDE][FILL])
+        lon_mask = (grasp_df[GRASP_LONGITUDE] != self.final_dict[GRASP_LONGITUDE][FILL])
 
-        grasp_df = grasp_df[pm25_mask]
+        # Look for where pm25 isn't empty (we'll just default to fill value if it is)
+        # pm25_mask = (grasp_df['pm25'] != self.fill_value)
+
+        grasp_df = grasp_df[lat_mask & lon_mask]
 
         return grasp_df
 
-    def run_grasp_matching_to_caltrak(self, caltrack):
-
-        grasp_pm25_data = []
+    def run_grasp_matching_to_caltrack(self, caltrack, verbose=True):
 
         grasp_df = self.build_grasp_df()
+        matching_list_of_dfs = []
 
         len_caltrack = len(caltrack.final_dict['geolocation_data']['latitude']['data'][0])
 
@@ -109,18 +112,21 @@ class GraspFile(HDFFile):
             lat = caltrack.final_dict['geolocation_data']['latitude']['data'][0][i]
             lon = caltrack.final_dict['geolocation_data']['longitude']['data'][0][i]
 
-            grasp_pm25_data.append(run_grasp_data_lookup(lat, lon, grasp_df, self.fill_value))
+            df = run_grasp_data_lookup(lat, lon, grasp_df, self.fill_value)
+            matching_list_of_dfs.append(df)
 
-            if i % 1000 == 0:
-                print(f"Completed {i} out of {len_caltrack}")
+            if (i + 1) % 1000 == 0 and verbose:
+                print(f"Completed {i + 1} out of {len_caltrack}")
                 # break
 
-        grasp_pm25_data = np.array(grasp_pm25_data, dtype=np.float32)
+        full_matching_df = pd.concat(matching_list_of_dfs)
 
-        self.grasp_matching_dict = {
-            DATA: grasp_pm25_data,
-            FILL: self.fill_value,
-            LONG_NAME: 'Grasp Calculated Particulate Matter 2.5nm',
-            SCALE: 1.0,
-            UNITS: 'nm'
-        }
+        for col in full_matching_df:
+
+            self.grasp_matching_dict[col] = {
+                DATA: np.array(full_matching_df[col], dtype=np.float32),
+                FILL: self.fill_value,
+                LONG_NAME: self.final_dict[col][LONG_NAME],
+                SCALE: self.final_dict[col][SCALE],
+                UNITS: self.final_dict[col][UNITS]
+            }

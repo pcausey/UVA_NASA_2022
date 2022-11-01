@@ -1,6 +1,10 @@
 from typing import NamedTuple
 
 
+GRASP_LATITUDE = 'grasp_latitude'
+GRASP_LONGITUDE = 'grasp_longitude'
+
+
 class GRASPColumn(NamedTuple):
     """ Class for holding the conversion dictionary column details"""
     outputName: str
@@ -41,8 +45,23 @@ class GRASPColumn(NamedTuple):
 
 # Google Docs Grasp File
 grasp_list = [
-    GRASPColumn(outputName='latitude', inputName='Latitude', folder='grasp'),
-    GRASPColumn(outputName='longitude', inputName='Longitude', folder='grasp'),
-    GRASPColumn(outputName='pm25', inputName='PM25_DRY', folder='grasp'),
-    GRASPColumn(outputName='time', inputName='Datetime', folder='grasp'),
+    GRASPColumn(outputName=GRASP_LATITUDE, inputName='Latitude', folder='grasp'),
+    GRASPColumn(outputName=GRASP_LONGITUDE, inputName='Longitude', folder='grasp'),
+    GRASPColumn(outputName='grasp_time', inputName='Datetime', folder='grasp'),
+
+    GRASPColumn(outputName='grasp_pm25', inputName='PM25_DRY', folder='grasp'),
+    GRASPColumn(outputName='grasp_pm10', inputName='PM10_DRY', folder='grasp'),
+
+    GRASPColumn(outputName='grasp_aod565', inputName='AOD565', folder='grasp'),
+    GRASPColumn(outputName='grasp_aodc565', inputName='AODC565', folder='grasp'),
+    GRASPColumn(outputName='grasp_aodf565', inputName='AODF565', folder='grasp'),
+
+    GRASPColumn(outputName='grasp_vertical_profile_height', inputName='VertProfileHeight', folder='grasp'),
+
+    # GRASPColumn(outputName='pm25', inputName='AerosolVolumeConcentration', folder='grasp'),
+    # GRASPColumn(outputName='pm25', inputName='Soot_Volume_Concentration_F', folder='grasp'),
+    # GRASPColumn(outputName='pm25', inputName='Soluble_Volume_Concentration_F', folder='grasp'),
+    # GRASPColumn(outputName='pm25', inputName='Water_Volume_Concentration_F', folder='grasp'),
+
+
 ]

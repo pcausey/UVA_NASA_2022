@@ -4,6 +4,10 @@ import numpy as np
 from L1C_Conversion_Pipeline.distance_functions import run_epa_data_lookup
 
 
+EPA_LATITUDE = 'Latitude'
+EPA_LONGITUDE = 'Longitude'
+
+
 class EPAFile:
     def __init__(self, epa_file_name, epa_path, file_date):
         self.epa_dict = {}
@@ -13,12 +17,16 @@ class EPAFile:
     def extract_epa_dated_data(epa_path, file_date, epa_file_name):
         # Limit EPA data to specific day
         epa_data = pd.read_csv(epa_path + epa_file_name)
+
+        cols_to_keep = ['Date Local', EPA_LATITUDE, EPA_LONGITUDE, 'Arithmetic Mean']
+        epa_data = epa_data[cols_to_keep]
+
         date_mask = (epa_data['Date Local'] == file_date)
         epa_data = epa_data[date_mask]
 
         return epa_data
 
-    def run_epa_matching_to_caltrak(self, caltrack):
+    def run_epa_matching_to_caltrack(self, caltrack):
         fill_value = -99999.0
 
         epa_pm25_data = []

@@ -4,6 +4,7 @@ from L1C_Conversion_Pipeline.google_drive import GoogleDrive
 from L1C_Conversion_Pipeline.EPA_Pipeline.epa_file import *
 from L1C_Conversion_Pipeline.icare import *
 from load_dotenv import TMP_PATH
+import traceback
 
 
 class L1CFile:
@@ -39,20 +40,20 @@ class L1CFile:
         epa = EPAFile(self.EPA_FILE_NAME, self.EPA_PATH, date_str)
 
         # need to 'extract' date from caltrak_file_name
-        caltrak_file_date = date_str.replace('-', '_')
+        caltrack_file_date = date_str.replace('-', '_')
 
         # pull list of caltrack files:
-        caltrak_files = self.return_files_in_caltrak_folder(year_str, caltrak_file_date, self.CALTRACK_PATH)
-        # caltrak_files = caltrak_files[0:3]
+        caltrack_files = self.return_files_in_caltrak_folder(year_str, caltrack_file_date, self.CALTRACK_PATH)
+        caltrack_files = caltrack_files[6:]
 
         if verbose:
-            print(caltrak_files)
+            print(caltrack_files)
             print("\n\n")
 
-        for file_name in caltrak_files:
+        for file_name in caltrack_files:
             tic = time.perf_counter()
 
-            self.run_single_l1c_file(file_name, year_str, caltrak_file_date, verbose, epa, grasp)
+            self.run_single_l1c_file(file_name, year_str, caltrack_file_date, verbose, epa, grasp)
 
             toc = time.perf_counter()
 
@@ -60,16 +61,22 @@ class L1CFile:
 
     def run_single_l1c_file(self, file_name, year_str, date_str, verbose, epa, grasp):
 
-        caltrack = self.run_caltrack_extraction(file_name, year_str, date_str, verbose)
+        try:
+            caltrack = self.run_caltrack_extraction(file_name, year_str, date_str, verbose)
 
-        caltrack = self.run_epa_matching(caltrack, epa, verbose)
+            caltrack = self.run_epa_matching(caltrack, epa, verbose)
 
-        caltrack = self.run_grasp_matching(caltrack, grasp, verbose)
+            caltrack = self.run_grasp_matching(caltrack, grasp, verbose)
 
-        self.write_to_l1c_file(caltrack, file_name, verbose)
+            self.write_to_l1c_file(caltrack, file_name, verbose)
 
-        # delete caltrack file from TMP Folder
-        self.delete_file(self.CALTRACK_PATH, file_name)
+            # delete caltrack file from TMP Folder
+            self.delete_file(self.CALTRACK_PATH, file_name)
+        except Exception as e:
+            msg = f"type error: {str(e)} \n" \
+                  f"{traceback.format_exc()}"
+            print(msg)
+            raise
 
     def run_caltrack_extraction(self, file_name, year_str, date_str, verbose=False):
         # download caltrack file
@@ -89,14 +96,14 @@ class L1CFile:
         if verbose:
             print(f"Start Build Caltrack Final Dict")
 
-        caltrak = CaltrackFile(self.CALTRACK_PATH + file_name)
-        caltrak.build_final_dict()
+        caltrack = CaltrackFile(self.CALTRACK_PATH + file_name)
+        caltrack.build_final_dict()
 
         toc = time.perf_counter()
         if verbose:
             print(f"Completed Caltrack Final Dict: {toc - tic:0.4f} seconds")
 
-        return caltrak
+        return caltrack
 
     def write_to_l1c_file(self, caltrack, file_name, verbose=False):
         #    Save Output File
@@ -120,9 +127,9 @@ class L1CFile:
         if verbose:
             print(f"Start EPA Match")
 
-        epa.run_epa_matching_to_caltrak(caltrack)
+        epa.run_epa_matching_to_caltrack(caltrack)
         caltrack.final_dict['epa_data'] = {}
-        caltrack.final_dict['epa_data']['pm25_epa'] = epa.epa_dict
+        caltrack.final_dict['epa_data']['epa_pm25'] = epa.epa_dict
 
         toc = time.perf_counter()
 
@@ -142,9 +149,9 @@ class L1CFile:
         if verbose:
             print(f"Start Grasp Match")
 
-        grasp.run_grasp_matching_to_caltrak(caltrack)
+        grasp.run_grasp_matching_to_caltrack(caltrack, verbose)
         caltrack.final_dict['grasp_data'] = {}
-        caltrack.final_dict['grasp_data']['pm25_grasp'] = grasp.grasp_matching_dict
+        caltrack.final_dict['grasp_data'] = grasp.grasp_matching_dict
 
         toc = time.perf_counter()
 
@@ -240,5 +247,5 @@ if __name__ == "__main__":
         year='2008',
         date_str='20080524',
         date_str_dash='2008-05-24',
-        verbose=False
+        verbose=True
     )
