@@ -149,7 +149,7 @@ class L1CFile:
         if verbose:
             print(f"Start Grasp Match")
 
-        grasp.run_grasp_matching_to_caltrack(caltrack, verbose)
+        grasp.run_grasp_matching_to_caltrack(caltrack)
         caltrack.final_dict['grasp_data'] = {}
         caltrack.final_dict['grasp_data'] = grasp.grasp_matching_dict
 

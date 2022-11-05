@@ -70,13 +70,14 @@ def calc_spherical_distance(lat1, lon1,
     # Utilizes numpy to broadcast input lat1/lon1 values to work with both
     # singular comparisons and list comparisons
     if dist_type == 'great_circle':
+
         distances = radius * (
             np.arccos(
                 np.sin(lat1) * np.sin(lat_compare)
                 + np.cos(lat1) * np.cos(lat_compare) * np.cos(lon1 - lon_compare)
             )
         )
-        
+
     elif dist_type == 'haversine':
         dlon = lon_compare - lon1
         dlat = lat_compare - lat1
@@ -132,9 +133,13 @@ def run_epa_data_lookup(d1_lat, d1_lon, epa_df, fill_value):
     from L1C_Conversion_Pipeline.EPA_Pipeline.epa_file import EPA_LATITUDE, EPA_LONGITUDE
 
     try:
+        degree_search = 0.1
+
         # TE CHANGES: FILTER EPA DATA
-        lat_mask = (epa_df[EPA_LATITUDE] >= d1_lat - 1) & (epa_df[EPA_LATITUDE] <= d1_lat + 1)
-        lon_mask = (epa_df[EPA_LONGITUDE] >= d1_lon - 1) & (epa_df[EPA_LONGITUDE] <= d1_lon + 1)
+        lat_mask = (epa_df[EPA_LATITUDE] >= d1_lat - degree_search) \
+                   & (epa_df[EPA_LATITUDE] <= d1_lat + degree_search)
+        lon_mask = (epa_df[EPA_LONGITUDE] >= d1_lon - degree_search) \
+                   & (epa_df[EPA_LONGITUDE] <= d1_lon + degree_search)
         # We're pre-filtering epa_data on date before passing into this function
         # date_mask = (epa_data['Date Local'] == d1_date)
 
@@ -164,59 +169,6 @@ def run_epa_data_lookup(d1_lat, d1_lon, epa_df, fill_value):
         return fill_value
 
 
-def build_empty_dataframe(df, fill_value):
-    dict_copy = {}
-    for col in df.columns:
-        dict_copy[col] = fill_value
-
-    df = pd.DataFrame(dict_copy, index=[0])
-    return df
 
 
-def run_grasp_data_lookup(d1_lat, d1_lon, grasp_df, fill_value):
-    from L1C_Conversion_Pipeline.Grasp_Pipeline.grasp_dict import GRASP_LATITUDE, GRASP_LONGITUDE
 
-    try:
-        # Limit search to 1 degree in all directions
-        lat_mask = ((grasp_df[GRASP_LATITUDE] >= d1_lat - 1) & (grasp_df[GRASP_LATITUDE] <= d1_lat + 1))
-        lon_mask = ((grasp_df[GRASP_LONGITUDE] >= d1_lon - 1) & (grasp_df[GRASP_LONGITUDE] <= d1_lon + 1))
-
-        grasp_data = grasp_df[lat_mask & lon_mask]
-
-        # Look for where other cols aren't equal to fill value (we'll just default to fill value if it is)
-        cols = [col for col in grasp_df.columns]
-        cols.remove(GRASP_LONGITUDE)
-        cols.remove(GRASP_LATITUDE)
-
-        query = ' & '.join([f'{col} != {fill_value}' for col in cols])
-        grasp_data = grasp_data.query(query)
-
-        if len(grasp_data) == 0:
-            # Only filter by Lat and Lon
-            # grasp_data = grasp_df[lat_mask & lon_mask]
-
-            # if len(grasp_data) == 0:
-            #     # Return a dataframe with all rows filled with Fill Value
-            return build_empty_dataframe(grasp_data, fill_value)
-
-        # Run below if Lat/Lon/PM25 filter > 0 OR Lat/Lon filter > 0
-        dist, index_min, min_lat, min_lon = \
-            calc_spherical_distance(
-                d1_lat, d1_lon,
-                grasp_data[GRASP_LATITUDE], grasp_data[GRASP_LONGITUDE],
-                verbose=False
-            )
-
-        # subset data to only contain closest point data
-        # min_dist_df = grasp_data[(grasp_data[GRASP_LATITUDE] == min_lat) &
-        #                          (grasp_data[GRASP_LONGITUDE] == min_lon)]
-        # data = min_dist_df.iloc[0]
-
-        data = grasp_data.iloc[[index_min]]
-
-        # Return a Row
-        return data
-
-    except Exception as e:
-        print(f'Grasp Lookup: error on lat: {d1_lat} and lon: {d1_lon}')
-        return fill_value
