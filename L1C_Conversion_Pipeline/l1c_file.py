@@ -39,12 +39,12 @@ class L1CFile:
         #   Only need to do this once per 'Day's data
         epa = EPAFile(self.EPA_FILE_NAME, self.EPA_PATH, date_str)
 
-        # need to 'extract' date from caltrak_file_name
+        # need to 'extract' date from caltrack_file_name
         caltrack_file_date = date_str.replace('-', '_')
 
         # pull list of caltrack files:
         caltrack_files = self.return_files_in_caltrak_folder(year_str, caltrack_file_date, self.CALTRACK_PATH)
-        caltrack_files = caltrack_files[6:]
+        # caltrack_files = caltrack_files[6:]
 
         if verbose:
             print(caltrack_files)
