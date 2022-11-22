@@ -90,8 +90,8 @@ class L1CFile:
         if verbose:
             print(f"Completed Download: {toc - tic:0.4f} seconds")
 
-        #    Pull a Caltrak File
-        #    Run Caltrak data extraction -> final_dict
+        #    Pull a Caltrack File
+        #    Run Caltrack data extraction -> final_dict
         tic = time.perf_counter()
         if verbose:
             print(f"Start Build Caltrack Final Dict")

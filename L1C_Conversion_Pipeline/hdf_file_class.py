@@ -104,7 +104,7 @@ class HDFFile:
                     # Create the variable instance
                     if verbose:
                         print('creating variable')
-                    nc[cat].createVariable(var, datatype='i8', dimensions=dimensions,
+                    nc[cat].createVariable(var, datatype='f8', dimensions=dimensions,  # 'i8'
                                            fill_value=variable_dict[cat][var][FILL])
 
                     # Create variable metadata

@@ -33,12 +33,12 @@ class CaltrackFile(HDFFile):
         # convert to float so we can use NaN
         tmp_data = orig_data.astype(float)
 
-        # Change 'fill value' to NaN so scalar mulitplication doesn't impact 'fill value' cells
+        # Change 'fill value' to NaN so scalar multiplication doesn't impact 'fill value' cells
         tmp_data[orig_data == fill_value] = np.nan
 
         # Rescale the Data
-        tmp_unscaled_data = tmp_data / old_scale
-        tmp_rescaled_data = tmp_unscaled_data * new_scale
+        tmp_unscaled_data = tmp_data * old_scale
+        tmp_rescaled_data = tmp_unscaled_data / new_scale
 
         # Change 'fill value' back to Original Fill Value
         tmp_rescaled_data = np.nan_to_num(x=tmp_rescaled_data, nan=fill_value)
@@ -129,7 +129,7 @@ class CaltrackFile(HDFFile):
                 long_names.append(field.long_name)
                 units.append(field.units)
 
-                # Rescale the value to 0.01
+                # Rescale the value to 1
                 new_scale = 1
                 tmp_data = self.rescale_data(
                     field.data, field.scale, new_scale, field.fill
@@ -197,41 +197,42 @@ class CaltrackFile(HDFFile):
 
     def build_observation_data(self):
 
-        reverse_scale = 1000
+        reverse_scale = 1
         new_scale = 1 / reverse_scale
 
         measurement_dict = self.build_measurement_dict()
+        # self.final_dict['measurement_dict'] = measurement_dict
 
         scale = measurement_dict[Q][SCALE]
         fill = measurement_dict[Q][FILL]
 
         # Create tensors for each of our I, Q, and U stokes datasets
         I_arr = np.multiply(copy.deepcopy(measurement_dict[I_P][DATA]), scale)
-        I_arr[np.abs(I_arr) == fill] = 1
+        I_arr[I_arr == fill] = 314159  # np.abs(I_arr)
 
         Q_arr = np.multiply(copy.deepcopy(measurement_dict[Q][DATA]), scale)
-        Q_arr[np.abs(Q_arr) == fill] = 1
+        Q_arr[Q_arr == fill] = 314159
 
         U_arr = np.multiply(copy.deepcopy(measurement_dict[U][DATA]), scale)
-        U_arr[np.abs(U_arr) == fill] = 1
+        U_arr[U_arr == fill] = 314159
 
         # Observation Data
-        self.build_i_parasol(measurement_dict, scale, fill)
-        self.build_dolp(Q_arr, U_arr, I_arr, reverse_scale, new_scale, fill)
+        self.build_i_parasol(measurement_dict, new_scale, fill)
+        self.build_dolp(measurement_dict, Q_arr, U_arr, I_arr, reverse_scale, new_scale, fill)
         self.build_q_over_i(measurement_dict, Q_arr, I_arr, reverse_scale, new_scale, fill)
         self.build_u_over_i(measurement_dict, U_arr, I_arr, reverse_scale, new_scale, fill)
 
-    def build_i_parasol(self, measurement_dict, scale, fill):
+    def build_i_parasol(self, measurement_dict, new_scale, fill):
         I_PARASOL = 'I_PARASOL'
 
         self.check_dictionary(OBSERVATION_DATA, I_PARASOL)
 
-        tmp_data = np.swapaxes(measurement_dict[I_NP][DATA], 2, 3)
+        tmp_data = np.swapaxes(measurement_dict[I_NP][DATA], 2, 3) * new_scale
 
         # Write to Observation Data in the final dictionary
         self.final_dict[OBSERVATION_DATA][I_PARASOL] = self.write_to_dictionary(
-            scale=scale,
-            data=np.round(tmp_data).astype(int),
+            scale=new_scale,
+            data=tmp_data,  # np.round(tmp_data).astype(int),
             fill=fill,
             long_name=I_PARASOL,
             units='None',
@@ -263,13 +264,13 @@ class CaltrackFile(HDFFile):
         # Write to Observation Data in the final dictionary
         self.final_dict[OBSERVATION_DATA][folder] = self.write_to_dictionary(
             scale=new_scale,
-            data=np.round(data).astype(int),
+            data=data,  # np.round(data).astype(int),
             fill=fill,
             long_name=long_name,
             units='None',
         )
 
-    def build_dolp(self, Q_arr, U_arr, I_arr, reverse_scale, new_scale, fill):
+    def build_dolp(self, measurement_dict, Q_arr, U_arr, I_arr, reverse_scale, new_scale, fill):
 
         DOLP_Folder = 'DOLP_PARASOL'
 
@@ -278,11 +279,18 @@ class CaltrackFile(HDFFile):
                     np.sqrt(
                         np.add(np.square(Q_arr), np.square(U_arr))
                     ), I_arr
-                ) * reverse_scale
+                ) * new_scale
         )
 
-        dolp = np.round(DOLP_arr_unfiltered).astype(int)
-        dolp = np.swapaxes(dolp, 2, 3)
+        DOLP_arr_unfiltered[
+                np.where(
+                    (measurement_dict[I_P][DATA] == fill)
+                    | (measurement_dict[Q][DATA] == fill)
+                    | (measurement_dict[U][DATA] == fill)
+                )] = fill
+
+        # dolp = np.round(DOLP_arr_unfiltered).astype(int)
+        dolp = np.swapaxes(DOLP_arr_unfiltered, 2, 3)
 
         # Write to Observation Data in the final dictionary
         self.write_to_observation_data(new_scale, dolp, fill, 'Degree of linear polarization', DOLP_Folder)
@@ -290,34 +298,34 @@ class CaltrackFile(HDFFile):
     def build_q_over_i(self, measurement_dict, Q_arr, I_arr, reverse_scale, new_scale, fill):
         Q_OVER_I_FOLDER = 'Q_over_I_PARASOL'
 
-        Q_over_I = np.divide(Q_arr, I_arr) * reverse_scale
+        Q_over_I = np.divide(Q_arr, I_arr) * new_scale
 
         Q_over_I[
             np.where(
                 (measurement_dict[I_P][DATA] == fill)
                 | (measurement_dict[Q][DATA] == fill)
-                | (measurement_dict[U][DATA] == fill)
+                # | (measurement_dict[U][DATA] == fill)
             )] = fill
         #
-        Q_over_I = np.round(Q_over_I).astype(int)
+        # Q_over_I = np.round(Q_over_I).astype(int)
         Q_over_I = np.swapaxes(Q_over_I, 2, 3)
 
         # Write to Observation Data in the final dictionary
         self.write_to_observation_data(new_scale, Q_over_I, fill, 'Q over I', Q_OVER_I_FOLDER)
 
-    def build_u_over_i(self, measurement_dict, Q_arr, I_arr, reverse_scale, new_scale, fill):
+    def build_u_over_i(self, measurement_dict, U_arr, I_arr, reverse_scale, new_scale, fill):
         U_OVER_I_FOLDER = 'U_over_I_PARASOL'
 
-        U_over_I = np.divide(Q_arr, I_arr) * reverse_scale
+        U_over_I = np.divide(U_arr, I_arr) * new_scale
 
         U_over_I[
             np.where(
                 (measurement_dict[I_P][DATA] == fill)
-                | (measurement_dict[Q][DATA] == fill)
+                # | (measurement_dict[Q][DATA] == fill)
                 | (measurement_dict[U][DATA] == fill)
             )] = fill
 
-        U_over_I = np.round(U_over_I).astype(int)
+        # U_over_I = np.round(U_over_I).astype(int)
         U_over_I = np.swapaxes(U_over_I, 2, 3)
 
         self.write_to_observation_data(new_scale, U_over_I, fill, 'U over I', U_OVER_I_FOLDER)
