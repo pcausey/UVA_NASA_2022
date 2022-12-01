@@ -2,9 +2,13 @@ import h5py
 from pyhdf.SD import SD, SDC
 import os
 from L1C_Conversion_Pipeline.variables import *
-from netCDF4 import Dataset
+import netCDF4
 from typing import NamedTuple
 import numpy as np
+
+HDF4 = '.hdf'
+HDF5 = '.h5'
+NETCDF = '.nc'
 
 
 class HDFColumn(NamedTuple):
@@ -17,9 +21,6 @@ class HDFColumn(NamedTuple):
 
 
 class HDFFile:
-
-    HDF4 = '.hdf'
-    HDF5 = '.h5'
 
     def __init__(self, file_path):
         self.file_type = self.parse_file_type(file_path)
@@ -41,10 +42,12 @@ class HDFFile:
                 file_type - extension used by other functions to access data
         """
 
-        if self.file_type == self.HDF5:
+        if self.file_type == HDF5:
             f = h5py.File(file_path, "r")
-        elif self.file_type == self.HDF4:
+        elif self.file_type == HDF4:
             f = SD(file_path, SDC.READ)
+        elif self.file_type == NETCDF:
+            f = netCDF4.Dataset(file_path)
         else:
             raise Exception("Unknown File Type")
 
@@ -57,10 +60,12 @@ class HDFFile:
             Outputs: List of field values
         """
 
-        if self.file_type == self.HDF5:
+        if self.file_type == HDF5:
             output = self.file[field_name]
-        elif self.file_type == self.HDF4:
+        elif self.file_type == HDF4:
             output = self.file.select(field_name)
+        elif self.file_type == NETCDF:
+            output = self.file[field_name]
         else:
             raise Exception("Unknown File Type")
 
@@ -74,7 +79,7 @@ class HDFFile:
         When verbose = True it will output a running log of complete tasks
         """
 
-        with Dataset(filename, mode='w', format='NETCDF4') as nc:
+        with netCDF4.Dataset(filename, mode='w', format='NETCDF4') as nc:
 
             for cat in variable_dict.keys():
                 if verbose:
@@ -99,7 +104,7 @@ class HDFFile:
                     # Create the variable instance
                     if verbose:
                         print('creating variable')
-                    nc[cat].createVariable(var, datatype='i8', dimensions=dimensions,
+                    nc[cat].createVariable(var, datatype='f8', dimensions=dimensions,  # 'i8'
                                            fill_value=variable_dict[cat][var][FILL])
 
                     # Create variable metadata

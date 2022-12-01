@@ -5,10 +5,12 @@ import os
 import re
 import shutil
 import time
+import subprocess
+
 from datetime import datetime
 from ftplib import FTP, error_perm, error_temp
 
-from load_dotenv import ICARE_USER, ICARE_PASSWORD, ICARE_FTP_SITE
+from load_dotenv import ICARE_USER, ICARE_PASSWORD, ICARE_FTP_SITE, GRASP_KEY
 
 import h5py
 # from pyhdf.SD import SD, SDC
@@ -19,7 +21,6 @@ Need to have .env file setup with filled in fields:
     icare_pw=<PASSWORD>
     icare_ftp=ftp.icare.univ-lille1.fr
 """
-
 
 
 def datetime_to_subpath(dt: datetime) -> str:
@@ -56,8 +57,8 @@ class ICARESession:
             os.makedirs(self.temp_dir, exist_ok=True)
         self.dir_tree = {}  # keep track of the directory tree of ICARE to cut down on FTP calls
 
-    def __del__(self):
-        self.cleanup()
+    # def __del__(self):
+    #     self.cleanup()
 
     def _get_rec(self, subdict, key_list):
         """Recursive get."""
@@ -228,3 +229,68 @@ def get_caltrack_files_from_grasp_day(grasp_date: str, download = False) -> list
                                         caltrack_file = file))
         
     return matching_files
+
+
+def return_file_names_in_dir(dir_path):
+    from os import listdir
+    from os.path import isfile, join
+
+    only_files = [f for f in listdir(dir_path) if isfile(join(dir_path, f))]
+
+    return only_files
+
+
+def get_grasp_files(filter_string, download_path, verbose = False):
+    """
+    SUMMARY: downloads a daily L2 file from the grasp-open website given a 
+             filter string and download path
+             
+             base website: https://download.grasp-cloud.com/download/polder/
+             
+             default path: https://download.grasp-cloud.com/download/polder/polder-3/models/v2.1/l2/daily/
+             
+             ** ENSURE YOU HAVE GRASP_KEY SET IN .ENV FILE **
+             
+    INPUTS: filter_string (str) - filter for the query, limits the files to retrieve
+            download_path (str) - directory path for download 
+            
+    OUTPUTS: no objects, creates a file structure that mirrors the GRASP website 
+             within the download_path path
+    
+    """
+    # Change current directory to download_path
+    os.chdir(download_path)
+    query_string = ''
+    
+    # Create the query string for the wget method
+    try:
+        query_string = 'wget --recursive --no-parent "https://{GRASP_KEY}@download.grasp-cloud.com/basic/polder/polder-3/models/v2.1/l2/daily/?filter={filter_string}"'.format(
+            GRASP_KEY = GRASP_KEY,
+            filter_string = filter_string
+        )
+    
+    except NameError:
+        print('GRASP_KEY is not found in .env file, add to file and retry')
+    
+    if verbose: 
+        print(query_string)
+        print("Querying using filter: {filter_string}".format(filter_string = filter_string))
+        
+    # Use subprocess to execute the wget command 
+    subprocess.Popen(query_string)
+    
+    if verbose: 
+        print("Query complete")
+
+    # Return no python object
+    return return_file_names_in_dir(download_path)
+    
+    
+                               
+                               
+                               
+                               
+                               
+                               
+                               
+                               
