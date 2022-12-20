@@ -1,4 +1,4 @@
-# UVA_NASA_2021
+# UVA_NASA_2022
 
 Repository for the UVA Master's in Data Science capstone project in collaboration with NASA. This repository includes scripts and files that do not need to be run on NASA's internal resources to properly compile as well as orienting documents for the project, its course and status. Mostly what is contained here can be designated into four main goals: project orientation, downloading data from iCARE, plotting PARASOL and GRASP data & reformatting PARASOL data into NASA's L1C format.
 
